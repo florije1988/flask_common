@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'florije'
 
-from flask import Flask
+from flask import Flask, jsonify
 from celery import Celery
 from flask_mail import Mail, Message
 
@@ -38,24 +38,53 @@ def make_celery(app):
 celery = make_celery(app)
 
 
+# @celery.task()
+# def send_mail(message):
+#     with app.app_context():
+#         msg = Message(message,
+#                       sender="945744127@qq.com",
+#                       recipients=["945744127@qq.com"])
+#         mail.send(msg)
+
+
+# @celery.task(name="tasks.add")
+# def add(x, y):
+#     return x + y
+
+
 @celery.task()
-def send_mail(message):
-    with app.app_context():
-        msg = Message(message,
-                      sender="945744127@qq.com",
-                      recipients=["945744127@qq.com"])
-        mail.send(msg)
+def add_together(a, b):
+    return a + b
+
+
+@celery.task
+def add(x, y):
+    return x + y
+
+
+@app.route("/test")
+def test():
+    x = 16
+    y = 16
+    res = add.apply_async((x, y))
+    context = {"id": res.task_id, "x": x, "y": y}
+    result = "add((x){}, (y){})".format(context['x'], context['y'])
+    goto = "{}".format(context['id'])
+    return jsonify(result=add.AsyncResult(res.task_id).get(timeout=1.0), goto=goto)
 
 
 @app.route('/')
 def hello_world():
-    send_mail.apply_async(('Hello World!',))
+    # send_mail.apply_async(('Hello World!',))
+
     # msg = Message('Hello World!',
-    #               sender="945744127@qq.com",
+    # sender="945744127@qq.com",
     #               recipients=["945744127@qq.com"])
     # mail.send(msg)
     return 'Hello World!'
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    # app.run(debug=True, host='0.0.0.0')
+    result = add.apply_async((4, 4),)
+    print result.get()
