@@ -10,7 +10,13 @@ def add(x, y):
     return x + y
 
 
+@app.task
+def sub(x):
+    return x
+
+
 if __name__ == '__main__':
-    result = add.apply_async((4, 4),)
+    # result = add.apply_async((4, 5), )
+    result = sub.apply_async((2, ),)
     print result.ready()
     print result.get()

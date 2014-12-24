@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 __author__ = 'florije'
 
-from flask import Flask, jsonify
+"""
+celery command:
+celery --app=flask_celery_demo.celery worker --loglevel=info
+"""
+
+from flask import Flask, jsonify, request
 from celery import Celery
 import logging
 from logging.handlers import TimedRotatingFileHandler
@@ -20,7 +25,7 @@ app.logger.addHandler(handler)
 
 
 def make_celery(app):
-    celery = Celery('flask_common', broker=app.config['CELERY_BROKER_URL'])
+    celery = Celery('flask_celery_demo', broker=app.config['CELERY_BROKER_URL'])
     celery.conf.update(app.config)
     TaskBase = celery.Task
 
@@ -44,21 +49,10 @@ def add_log(msg):
     return msg
 
 
-@celery.task()
-def add(x):
-    return x
-
-
-@app.route("/test")
-def test():
-    add_log.apply_async((2, ))
-    # add.apply_async((4,))
-    return jsonify(result='success'), 200
-
-
 @app.route('/')
 def hello_world():
-    return 'Hello World!'
+    add_log.apply_async((request.host, ))
+    return jsonify(result='success'), 200
 
 
 if __name__ == '__main__':
